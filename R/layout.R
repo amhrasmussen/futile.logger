@@ -1,19 +1,19 @@
 #' Manage layouts within the 'futile.logger' sub-system
-#' 
+#'
 #' Provides functions for managing layouts. Typically 'flog.layout' is only
 #' used when manually creating a logging configuration.
-#' 
+#'
 #' @section Usage:
 #' # Get the layout function for the given logger\cr
 #' flog.layout(name) \%::\% character : Function\cr
 #' flog.layout(name='ROOT')
-#' 
+#'
 #' # Set the layout function for the given logger\cr
 #' flog.layout(fn, name='ROOT')
-#' 
+#'
 #' # Decorate log messages with a standard format\cr
 #' layout.simple(level, msg, ...)
-#' 
+#'
 #' # Decorate log messages with a standard format and a pid\cr
 #' layout.simple.parallel(level, msg, ...)
 #'
@@ -25,24 +25,24 @@
 #'
 #' # Show the value of a single variable
 #' layout.tracearg(level, msg, ...)
-#' 
+#'
 #' # Generate log messages in a Graylog2 HTTP GELF accetable format
 #' layout.graylog(common.fields)
-#' 
+#'
 #' @section Details:
 #' Layouts are responsible for formatting messages so they are human-readable.
-#' Similar to an appender, a layout is assigned to a logger by calling 
+#' Similar to an appender, a layout is assigned to a logger by calling
 #' \code{flog.layout}. The \code{flog.layout} function is used internally
-#' to get the registered layout function. It is kept visible so 
+#' to get the registered layout function. It is kept visible so
 #' user-level introspection is possible.
-#' 
-#' \code{layout.simple} is a pre-defined layout function that 
+#'
+#' \code{layout.simple} is a pre-defined layout function that
 #' prints messages in the following format:\cr
 #'   LEVEL [timestamp] message
 #'
 #' This is the default layout for the ROOT logger.
-#' 
-#' \code{layout.format} allows you to specify the format string to use 
+#'
+#' \code{layout.format} allows you to specify the format string to use
 #' in printing a message. The following tokens are available.
 #' \describe{
 #' \item{~l}{Log level}
@@ -55,24 +55,24 @@
 #'
 #' \code{layout.json} converts the message and any additional objects provided
 #' to a JSON structure. E.g.:
-#' 
+#'
 #' flog.info("Hello, world", cat='asdf')
-#'  
+#'
 #' yields something like
-#' 
+#'
 #' \{"level":"INFO","timestamp":"2015-03-06 19:16:02 EST","message":"Hello, world","func":"(shell)","cat":["asdf"]\}
-#' 
+#'
 #' \code{layout.tracearg} is a special layout that takes a variable
 #' and prints its name and contents.
-#' 
+#'
 #' \code{layout.graylog} is a special layout for use with the appender.graylog to
 #' generate json acceptable to a Graylog2 HTTP GELF endpoint. Standard fields to
 #' be included with every message can be included by setting the common.fields
-#' to a list of properties. E.g.: 
-#' 
-#' flog.layout(layout.graylog(common.fields = list(host_ip = "10.10.11.23", 
+#' to a list of properties. E.g.:
+#'
+#' flog.layout(layout.graylog(common.fields = list(host_ip = "10.10.11.23",
 #'                                                 env = "production")))
-#' 
+#'
 #' @name flog.layout
 #' @aliases layout.simple layout.simple.parallel layout.format layout.tracearg layout.json layout.graylog
 #' @param \dots Used internally by lambda.r
@@ -86,7 +86,7 @@
 #' # Update the ROOT logger to use a custom layout
 #' layout <- layout.format('[~l] [~t] [~n.~f] ~m')
 #' flog.layout(layout)
-#' 
+#'
 #' # Create a custom logger to trace variables
 #' flog.layout(layout.tracearg, name='tracer')
 #' x <- 5
@@ -135,7 +135,7 @@ layout.simple.parallel <- function(level, msg, ...)
 # Get name of a parent function in call stack
 # @param .where: where in the call stack. -1 means parent of the caller.
 .get.parent.func.name <- function(.where) {
-  the.function <- tryCatch(deparse(sys.call(.where - 1)[[1]]), 
+  the.function <- tryCatch(deparse(sys.call(.where - 1)[[1]]),
         error=function(e) "(shell)")
   the.function <- ifelse(
     length(grep('flog\\.',the.function)) == 0, the.function, '(shell)')
@@ -147,10 +147,10 @@ layout.simple.parallel <- function(level, msg, ...)
 layout.json <- function(level, msg, ...) {
   if (!requireNamespace("jsonlite", quietly=TRUE))
     stop("layout.json requires jsonlite. Please install it.", call.=FALSE)
-  
-  the.function <- .get.parent.func.name(-3) # get name of the function 
+
+  the.function <- .get.parent.func.name(-3) # get name of the function
                                             # 3 deep in the call stack
-  
+
   output_list <- list(
     level=jsonlite::unbox(names(level)),
     timestamp=jsonlite::unbox(format(Sys.time(), "%Y-%m-%d %H:%M:%S %z")),
@@ -176,7 +176,13 @@ layout.format <- function(format, datetime.fmt="%Y-%m-%d %H:%M:%S")
   .where = -3 # get name of the function 3 deep in the call stack
               # that is, the function that has called flog.*
   function(level, msg, ...) {
-    if (! is.null(substitute(...))) msg <- sprintf(msg, ...)
+    args <- list(...)
+    if (length(args) == 1) {
+      msg <- sprintf(msg, args)
+    } else if (length(args) > 1) {
+      msg <- sprintf(msg, ...)
+    }
+
     the.level <- names(level)
     the.time <- format(Sys.time(), datetime.fmt)
     the.namespace <- flog.namespace(.where)
@@ -225,28 +231,28 @@ layout.graylog <- function(common.fields, datetime.fmt="%Y-%m-%d %H:%M:%S")
 {
   .where = -3 # get name of the function 3 deep in the call stack
   # that is, the function that has called flog.*
-  
+
   missing.common.fields <- missing(common.fields)
-  
+
   function(level, msg, ...) {
-    
+
     if (! is.null(substitute(...))) msg <- sprintf(msg, ...)
-    
+
     the.namespace <- flog.namespace(.where)
-    
+
     output_list <- list(
       flogger_level = names(level),
-      time = format(Sys.time(), datetime.fmt), 
+      time = format(Sys.time(), datetime.fmt),
       namespace = ifelse(the.namespace == 'futile.logger', 'ROOT', the.namespace),
-      func = .get.parent.func.name(.where), 
+      func = .get.parent.func.name(.where),
       pid = Sys.getpid(),
       message = msg
     )
-    
+
     if (!missing.common.fields)
       output_list <- c(output_list, common.fields)
-    
+
     jsonlite::toJSON(output_list, auto_unbox = TRUE)
-    
+
   }
-}  
+}
