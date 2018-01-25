@@ -22,8 +22,7 @@ test_that("~m token works with character()", {
   flog.layout(layout.format('xxx ~m xxx'))
   expect_output(
     flog.info("%s", character(0)),
-    regexp = "xxx character\\(0\\) xxx"
-  )
+    regexp = "xxx character\\(0\\) xxx")
 })
 
 test_that("~m token works with list()", {
@@ -31,8 +30,7 @@ test_that("~m token works with list()", {
   flog.layout(layout.format('xxx ~m xxx'))
   expect_output(
     flog.info("%s", list()),
-    regexp = "xxx list\\(\\) xxx"
-  )
+    regexp = "xxx list\\(\\) xxx")
 })
 
 test_that("layout.format works with multiple items", {
@@ -40,8 +38,7 @@ test_that("layout.format works with multiple items", {
   flog.layout(layout.format('xxx ~m xxx'))
   expect_output(
     flog.info("%s %s", "1", "2"),
-    regexp = "xxx 1 2 xxx"
-  )
+    regexp = "xxx 1 2 xxx")
 })
 
 test_that("~p token", {
