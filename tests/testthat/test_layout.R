@@ -17,6 +17,26 @@ test_that("layout.simple.parallel layout", {
   expect_that(length(grep('log message', raw)) > 0, is_true())
 })
 
+test_that("~m token works with character()", {
+  flog.threshold(INFO)
+  flog.layout(layout.format('xxx[~m]xxx'))
+  expect_output(
+    flog.info("%s", character(0)),
+    regexp = "[xxx]\\[character\\(0\\)\\][xxx]"
+  )
+})
+
+test_that("~m token works with list()", {
+  flog.threshold(INFO)
+  flog.layout(layout.format('xxx[~m]xxx'))
+  expect_output(
+    flog.info("%s", list()),
+    regexp = "[xxx]\\[list\\(\\)\\][xxx]"
+  )
+
+})
+
+
 test_that("~p token", {
   flog.threshold(INFO)
   flog.layout(layout.format('xxx[~l ~p]xxx'))
